@@ -12,7 +12,8 @@ The matrix, barcode, and feature files for two SVF samples, a control cultured A
 
 Following this initial UMAP generation and QC checking, cell types are annotated based on the results of the unssupervised clustering and dimensionality reduction. First, broad cell type markers from Liu et al., Nature 2022 are used to categorize cell types in a single SVF sample at low granularity, then additional marker genes are identified to functionally annotate these broad cell types into more granular subtypes. These cell type annotations are then mapped onto a second SVF sample using Seurat TransferData to show concurrence in annotations across donors.
 
-![alt text](/Figure1.pdf "SVF single cell analysis")
+["SVF single cell analysis"](Figure1.pdf)
+
 
 The cultured, control and cytokine-stimulated Seurat object had less well defined cell types, so an initial optimization of clustering resolution is performed on that object. 
 
