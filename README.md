@@ -21,19 +21,19 @@ Following cell type annotation, dot plots are generated to show expression of ma
 
 Monocle3 is used to identify a trajectory and pseudotime projection on the cultured object.
 
-![alt text](/Figure2.pdf "ASC single cell analysis")
+["ASC single cell analysis"](Figure2.pdf)
 
 ### Single cell RNA sequencing and bulk proteomic concurrence testing
 Following this single cell RNA sequencing pipeline, the proteomics data is read in and protein names are substituted for gene names. Following some formatting, the correlatiion between bulk proteomics data in control and cytokine-stimulated cultured samples and single-cell pseudobulk data in control and cytokine-stimulated cells is calculated. Differential gene expression analysis (control vs. stimulated) and differential protein abundance analysis (control vs. stimulated) are performed, and the relationship between differentially abundant genes/proteins is idenitfied, plotted, and functionally interrogated uusing GSEA. 
 
-![alt text](/Figure4.pdf "Concurrence testing")
+["Concurrence testing"](Figure4.pdf)
 
 ### Protemic profiling
 Next, analysis using just the bulk proteomics of 10 human donor ASC samples (5 donors, control and cytokine-stimulated) is performed. PCA plotting shows separation based on presence or absence of cytokine treatment. Differential protein analysis is plotted as a volcano plot. The heatmaps showing all proteins and differentially abundant proteins are made.
 
-![alt text](/Figure3.pdf "Proteomic profiling")
+["Proteomic profiling"](Figure3.pdf)
 
 ### Scissor integration of single-cell RNA sequencing SVF data and bulk proteomics ASC data
 Scissor integration (Sun et al, Nat. Biotechnol. 2022) is used to identify a subset of SVF cells that are phenotypically similar to ASCs that are cultured swith inflammatory cytokines in vitro. ASCs deemed Scissor-Postive and Scissor-Negative are compared using differential gene expression analysis and from that list, a phenotype of 6 differentially expressed genes encoding surface proteins is identified.
 
-![alt text](/Figure5.pdf "Scissor")
+["Scissor"](Figure5.pdf)
