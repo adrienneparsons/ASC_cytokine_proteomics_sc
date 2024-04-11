@@ -29,7 +29,7 @@ Following this single cell RNA sequencing pipeline, the proteomics data is read 
 ["Concurrence testing"](Figure4.pdf)
 
 ### Protemic profiling
-Next, analysis using just the bulk proteomics of 10 human donor ASC samples (5 donors, control and cytokine-stimulated) is performed. PCA plotting shows separation based on presence or absence of cytokine treatment. Differential protein analysis is plotted as a volcano plot. The heatmaps showing all proteins and differentially abundant proteins are made.
+Next, analysis using just the bulk proteomics of 10 human donor ASC samples (5 donors, control and cytokine-stimulated) is performed. PCA plotting shows separation based on presence or absence of cytokine treatment. Differential protein analysis is plotted as a volcano plot. The heatmaps showing all proteins, differentially abundant proteins, sand proteins encoded by DE genes following cytokine stimulation (Hu et al, Cell BioSci 2024) are made.
 
 ["Proteomic profiling"](Figure3.pdf)
 
