@@ -803,9 +803,15 @@ de_heatmap <- proteomics[rownames(proteomics) %in% res2$gene[res2$logFC > 1] |
                            rownames(proteomics) %in% res2$gene[res2$logFC < -1],]
 deprots <- pheatmap(de_heatmap)
 
-ggsave("allprots2.pdf", allprots, device = "pdf", width = 7, height = 15)
-ggsave("deprots2.pdf", deprots, device = "pdf", width = 7, height = 15)
+# Heatmap of genes/proteins involved in MSC immunomodulation
+immprots <- unlist(as.list(read_excel("/Users/addie/Desktop/DEgenes.xlsx")))
 
+imm_heatmap <- proteomics[rownames(proteomics) %in% immprots,]
+imm_map <- pheatmap(imm_heatmap)
+
+ggsave("allprots2.pdf", allprots, device = "pdf", width = 7, height = 15)
+ggsave("deprots3.pdf", deprots, device = "pdf", width = 7, height = 7)
+ggsave("immprots.pdf", imm_map, device = "pdf", width = 7, height = 7)
 
 #######################################################################################
 # Scissor integration of Cultured and P0 cells
