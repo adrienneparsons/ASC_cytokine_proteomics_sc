@@ -4,8 +4,7 @@ library(tidyverse)
 library(msigdbr)
 library(readxl)
 library(ggvenn)
-library(DESeq2)
-library(msigdbr)
+library(DEP)
 library(fgsea)
 
 #Read in the data for the 4 samples
@@ -56,14 +55,14 @@ Cultured <- merge(Ctrl, Stim)
 #Go through iterations to generate a UMAP of the P0 loaded data
 P0 <- NormalizeData(P0)
 P0 <- FindVariableFeatures(P0, 
-                             selection.method = "vst", nfeatures = 2000)
+                           selection.method = "vst", nfeatures = 2000)
 P0 <- ScaleData(P0, features = VariableFeatures(P0))
 P0 <- RunPCA(P0, features = VariableFeatures(object = P0))
 
 #Go through iterations to generate a UMAP of the cultured loaded data
 Cultured <- NormalizeData(Cultured)
 Cultured <- FindVariableFeatures(Cultured, 
-                           selection.method = "vst", nfeatures = 2000)
+                                 selection.method = "vst", nfeatures = 2000)
 Cultured <- ScaleData(Cultured, features = VariableFeatures(Cultured))
 Cultured <- RunPCA(Cultured, features = VariableFeatures(object = Cultured))
 
@@ -83,7 +82,7 @@ write.table(P0_UMAP_coords, "P0_UMAP_coords.tsv", quote = F, sep = "\t")
 #Continue to generate UMAP for P0D25 Alone
 D25P0 <- NormalizeData(D25P0)
 D25P0 <- FindVariableFeatures(D25P0, 
-                                 selection.method = "vst", nfeatures = 2000)
+                              selection.method = "vst", nfeatures = 2000)
 D25P0 <- ScaleData(D25P0, features = VariableFeatures(D25P0))
 D25P0 <- RunPCA(D25P0, features = VariableFeatures(object = D25P0))
 ElbowPlot(D25P0)
@@ -125,13 +124,13 @@ s.genes <- cc.genes.updated.2019$s.genes
 g2m.genes <- cc.genes.updated.2019$g2m.genes
 
 Cultured <- CellCycleScoring(Cultured, s.features = s.genes, 
-                         g2m.features = g2m.genes, set.ident = TRUE)
+                             g2m.features = g2m.genes, set.ident = TRUE)
 f <- DimPlot(Cultured, reduction = "umap", group.by = "Phase")+ theme(aspect.ratio = 1)
 
 ggsave("Cultured by cell cycle.pdf", f, device = "pdf")
 
 D25P0 <- CellCycleScoring(D25P0, s.features = s.genes, 
-                             g2m.features = g2m.genes, set.ident = TRUE)
+                          g2m.features = g2m.genes, set.ident = TRUE)
 g <- DimPlot(D25P0, reduction = "umap", group.by = "Phase")+ theme(aspect.ratio = 1)
 
 ggsave("P0 by cell cycle.pdf", g, device = "pdf")
@@ -151,8 +150,10 @@ i <- DimPlot(Cultured, reduction = "umap", group.by = "Phase", shuffle = T)+ the
 ggsave("cultured by cluster after regression.pdf", h, device = "pdf")
 ggsave("cultured by cellcycle after regression.pdf", i, device = "pdf")
 
-save.image(file = "20230412_gradschool.rdata")
+# Save analyzed data thus far
+#save.image(file = "20230412_gradschool.rdata")
 
+# Load data after saving to skip these initial steps
 load("/Users/addie/desktop/PhD_work/20230412_gradschool.rdata")
 
 ####################################################################
@@ -163,23 +164,20 @@ load("/Users/addie/desktop/PhD_work/20230412_gradschool.rdata")
 D25P0.markers <- FindAllMarkers(D25P0, only.pos = TRUE, min.pct = 0.25, 
                                 logfc.threshold = 0.25)
 
-
+# Marker genes from Liu et al.
 markergenes <- c("PDGFRA", "DCN", "CDH5", "PECAM1", "RGS5", "CSPG4", "CD3D", 
-                  "CD3G", "KLRB1", "KLRD1", "CD79A", "IGHG2", "TPSB2", "KIT", 
+                 "CD3G", "KLRB1", "KLRD1", "CD79A", "IGHG2", "TPSB2", "KIT", 
                  "ITGAM", "CD68", "LY75", "CLEC4C")
 
+# Print clusters that are enriched for these marker genes
 for(gene in markergenes){
   print(gene)
-    for(row in 1:nrow(D25P0.markers)){
-      if(D25P0.markers$gene[row] == gene){
-        print(D25P0.markers$cluster[row])
-      }
+  for(row in 1:nrow(D25P0.markers)){
+    if(D25P0.markers$gene[row] == gene){
+      print(D25P0.markers$cluster[row])
     }
   }
-
-#data <- D25P0.markers %>%
-#  group_by(cluster) %>%
-#  slice_max(n = 5, order_by = avg_log2FC)
+}
 
 ###################################################################
 
@@ -256,6 +254,7 @@ D49P0 <- FindClusters(D49P0, resolution = 0.5)
 D49P0 <- RunUMAP(D49P0, dims = 1:10)
 DimPlot(D49P0, reduction = "umap")
 
+# Transfer the annotations
 anchors <- FindTransferAnchors(
   D25P0,
   D49P0
@@ -308,31 +307,35 @@ ggsave("clust0.05_cultured.pdf", clust0.05, device = "pdf")
 ggsave("clust0.5_cultured.pdf", clust0.5, device = "pdf")
 
 ##################################################################################
-# Dot Plot Visualization of marker genes for the P0 Seurat Object
+# Dot and Violin Plot Visualization of marker genes for the P0 Seurat Object
 # List of features for each annotation
 D25P0@meta.data$annotations <- Idents(D25P0)
 
-#####################################################################################
-
+# Major cell types
 VlnPlot(D25P0, features = c("PDGFRA", "DCN", "RGS5", "CSPG4", "ITGAM", "CD68", 
                             "CDH5", "PECAM1", "CD3D", "CD3G"), ncol = 5, pt.size = 0)
-
+# ASC-specific genes
 ASC_genes <- c("PDGFRA", "DCN", "APOD", "CXCL14", "MGP", "PRG4", "CLEC3B")
 names(ASC_genes) <- "ASC"
 
+# Pericyte-like genes
 Pericyte_genes <- c("RGS5", "CSPG4", "ACTA2", "TAGLN", "MYH11")
 names(Pericyte_genes) <- "Pericyte"
 
+# Macrophage genes
 Macrophage_genes <- c("ITGAM", "CD68", "HMOX1", "TXNRD1", "LYVE1", "CD209", "GAS6", "MRC1")
 names(Macrophage_genes) <- "Macrophage"
 
+# Endothelial genes
 Endothelial_genes <- c("CDH5", "PECAM1", "COL1A2", "COL1A1", "EFNB2", "SOX17", "SEMA3G",
-                      "HEY1", "CA4", "HMCN1", "ACKR1", "VCAM1", "IFI27", "SPARC")
+                       "HEY1", "CA4", "HMCN1", "ACKR1", "VCAM1", "IFI27", "SPARC")
 names(Endothelial_genes) <- "Endothelial"
 
+# T cell genes
 T_genes <- c("CD3D", "CD3G")
 names(T_genes) <- "T-Cell"
 
+# Prep for dot plot
 genes_for_dotplot <- c(Pericyte_genes, T_genes, ASC_genes, Endothelial_genes, Macrophage_genes)
 names(genes_for_dotplot) <- NULL
 
@@ -343,17 +346,16 @@ colors_for_genes <- c(rep("purple", length(Pericyte_genes)), rep("green", length
                       rep("blue", length(ASC_genes)), rep("orange", length(Endothelial_genes)),
                       rep("red", length(Macrophage_genes)))
 
-
+# P0 dot plot
 dotplot_P0 <- DotPlot(D25P0, features = genes_for_dotplot, group.by = "annotations", cluster.idents = T,
-        col.min = 0)+ theme(axis.text.x = element_text(size = 26, angle = 45, vjust = 0.5, hjust=1, color =  
-                                                         colors_for_genes))+
+                      col.min = 0)+ theme(axis.text.x = element_text(size = 26, angle = 45, vjust = 0.5, hjust=1, color =  
+                                                                       colors_for_genes))+
   theme(axis.text.y = element_text(size = 26, color = rev(colors_for_clusters)))+
   theme(legend.position = "bottom")
 
 setwd("/Users/addie/Desktop/PhD_work")
 ggsave("P0_dotplot.pdf", plot = dotplot_P0, device = "pdf", width = 24, height = 9)
 
-#############################################################################
 ###############################################################################
 # This is an effort to find the markers that define the clusters in the cultured objects
 
@@ -385,6 +387,8 @@ new.cluster.ids <- c("Control_ASCs", "ASCs_Migratory_signaling", "ASCs_Immunopro
 # Update the UMAP to have the annotations (cell names)
 names(new.cluster.ids) <- levels(Cultured)
 Cultured <- RenameIdents(Cultured, new.cluster.ids)
+
+Cultured@meta.data$Cluster_ID <- Idents(Cultured)
 Cultured_plot <- DimPlot(Cultured, reduction = "umap", label = TRUE, pt.size = 0.5)+theme(aspect.ratio = 1)
 
 ggsave("Cultured_annotated_UMAP.pdf", Cultured_plot, device = "pdf")
@@ -400,9 +404,9 @@ ECM_genes <- c("ABI3BP", "PTPRK", "PARP14")
 
 Tissue_remodeling_genes <- c("ACTA2", "POSTN")
 
+# Prep for dot plot
 genes_for_dotplot <- c(Immunoproteasome_genes, Migratory_genes, ECM_genes,
                        Tissue_remodeling_genes, Ctrl_genes)
-
 
 colors_for_clusters <- c("purple", "green", "blue", "orange", "red")
 
@@ -412,8 +416,8 @@ colors_for_genes <- c(rep("purple", length(Immunoproteasome_genes)), rep("green"
 
 
 dotplot_cultured <- DotPlot(Cultured, features = genes_for_dotplot, cluster.idents = T,
-                      col.min = 0)+ theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1, color =  
-                                                                       colors_for_genes))+
+                            col.min = 0)+ theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1, color =  
+                                                                             colors_for_genes))+
   theme(axis.text.y = element_text(color = rev(colors_for_clusters)))
 
 ggsave("cultured_dotplot.pdf", plot = dotplot_cultured, device = "pdf", width = 15)
@@ -505,7 +509,7 @@ colnames(proteomics_data) <- c("Ctrl_1", "Ctrl_2", "Ctrl_3", "Ctrl_4", "Ctrl_5",
                                "Stim_1", "Stim_2", "Stim_3", "Stim_4", "Stim_5")
 
 rownames(proteomics_data) <- proteomics$Accession
-  
+
 proteomics_data[is.na(proteomics_data)] <- 0
 
 # Change the protein Accession numbers to gene names
@@ -521,12 +525,12 @@ for(prot_name in unique(names$From)){
 
 # Rename the column names to reflect stimulus and replicate
 colnames(proteomics_data2) <- c("Ctrl_1", "Ctrl_2", "Ctrl_3", "Ctrl_4", "Ctrl_5",
-                               "Stim_1", "Stim_2", "Stim_3", "Stim_4", "Stim_5", "gene")
+                                "Stim_1", "Stim_2", "Stim_3", "Stim_4", "Stim_5", "gene")
 
 # Some proteins have redundant gene names; average those redundancies
 prot_data_final <- data.frame(matrix(NA, nrow = 1, ncol = 11))
 colnames(prot_data_final) <- c("Ctrl_1", "Ctrl_2", "Ctrl_3", "Ctrl_4", "Ctrl_5",
-                                "Stim_1", "Stim_2", "Stim_3", "Stim_4", "Stim_5", "gene")
+                               "Stim_1", "Stim_2", "Stim_3", "Stim_4", "Stim_5", "gene")
 
 for(gene in unique(proteomics_data2$gene)){
   if(nrow(proteomics_data2[proteomics_data2$gene == gene,] > 1)){
@@ -540,7 +544,7 @@ for(gene in unique(proteomics_data2$gene)){
 
 prot_data_final <- prot_data_final[-1,]
 
-# Copy the daataa for downstream aanalysis
+# Copy the data for downstream analysis
 prot_data_final2 <- data.frame(sapply(prot_data_final[1:10], as.numeric))
 prot_data_final2$gene <- prot_data_final$gene
 
@@ -570,39 +574,65 @@ cor_df_stim2 <- cor_df_stim[cor_df_stim$rowMeans.prot_data_final2...6.10.. > 0,]
 
 # plot
 ctrl_cor <- ggplot(cor_df_ctrl2, aes(x = log1p(rowMeans.prot_data_final2...1.5..), y = log1p(rowMeans.GetAssayData.Ctrl..)))+
-  geom_point()+
+  geom_point(size = 0.5)+
   stat_smooth(method = "lm",
               formula = y ~ x,
               geom = "smooth")+
-  xlab("Log Protein abundance")+ ylab("Log Pseudobulk gene expression")
+  theme(text = element_text(size = 10))+
+  xlab("Log Relative Protein abundance")+ ylab("Log Pseudobulk gene expression")
 
 stim_cor <- ggplot(cor_df_stim2, aes(x = log1p(rowMeans.prot_data_final2...6.10..), y = log1p(rowMeans.GetAssayData.Stim..)))+
-  geom_point()+
+  geom_point(size = 0.5)+
   stat_smooth(method = "lm",
               formula = y ~ x,
               geom = "smooth")+
-  xlab("Log Protein abundance")+ ylab("Log Pseudobulk gene expression")
+  theme(text = element_text(size = 10))+
+  xlab("Log Relative Protein abundance")+ ylab("Log Pseudobulk gene expression")
 
-ggsave("ctrl_pseudobulk_proteomics_cor.pdf", ctrl_cor, device = "pdf")
-ggsave("stim_pseudobulk_proteomics_cor.pdf", stim_cor, device = "pdf")
+ggsave("ctrl_pseudobulk_proteomics_cor.pdf", ctrl_cor, device = "pdf", height = 1.5, width = 2.25)
+ggsave("stim_pseudobulk_proteomics_cor.pdf", stim_cor, device = "pdf", height = 1.5, width = 2.25)
 
 ###################################################################################
 # DE gene and protein analysis
 
 # Get the DE genes from sc
+Cultured <- NormalizeData(Cultured) %>% ScaleData(.)
 Idents(Cultured) <- "orig.ident"
 DimPlot(Cultured)+ theme(aspect.ratio = 1)
 
 ctrlvsstim <- FindMarkers(Cultured, ident.1 = "Stim", ident.2 = "Ctrl")
 ctrlvsstim <- subset(ctrlvsstim, subset = ctrlvsstim$p_val_adj < 0.05)
 
-# Get the DE proteins from proteomics
-coldata <- data.frame(c("Ctrl", "Ctrl","Ctrl","Ctrl","Ctrl", "Stim","Stim","Stim","Stim","Stim"))
-colnames(coldata) <- "treatment_status"
 
+# DEP basic pipeline for differential pprotien abundance
+library(DEP)
+rownames(prot_data_final2) <- prot_data_final2$gene
+de_protsdata <- prot_data_final2[,-11]
+de_protsdata2 <- data.frame(sapply(de_protsdata/10000, as.integer))
+de_protsdata2$gene <- prot_data_final2$gene
+rownames(de_protsdata2) <- rownames(prot_data_final2)
+
+data_unique <- make_unique(de_protsdata2, "gene", "gene", delim = ";")
+
+columns <- 1:10
+
+experimental_design <- data.frame(label = c(paste0("Ctrl_", 1:5), paste0("Stim_", 1:5)), condition = c(rep("Ctrl", 5), rep("Stim", 5)),
+                                                           replicate = c(1:5, 1:5))
+
+data_se <- make_se(data_unique, columns, experimental_design)
+data_diff <- test_diff(data_se, type = "control", control = "Ctrl")
+data_diff2 <- add_rejections(data_diff)
+plot_heatmap(data_diff2)
+data_results <- get_results(data_diff2)
+nrow(data_results[data_results$Stim_vs_Ctrl_p.adj < 0.05,])
+
+data_results <- na.omit(data_results)
+nrow(data_results[data_results$Stim_vs_Ctrl_p.adj < 0.05,])
+
+# transform the data for downstream anaalyses
 proteomics_data2 <- prot_data_final2[,1:10]/10000
 prots_for_scissor <- proteomics_data2
-  
+
 
 proteomics_data2 <- sapply(proteomics_data2, function(x) {
   as.integer(as.character(x))
@@ -610,20 +640,9 @@ proteomics_data2 <- sapply(proteomics_data2, function(x) {
 
 rownames(proteomics_data2) <- prot_data_final2$gene
 
-
-# DESeq2 analysis to find differentially abundant proteins
-dds <- DESeqDataSetFromMatrix(countData = proteomics_data2,
-                              colData = coldata,
-                              design = ~treatment_status)
-dds <- DESeq(dds)
-res <- results(dds, contrast=c("treatment_status","Stim","Ctrl"))
-
-res <- subset(res, subset = res$padj < 0.05)
-
-res2 <- data.frame("gene" = rownames(res), "logFC" = res$log2FoldChange, "pval" = res$pvalue, "padj" = res$padj)
-
+setwd("/Users/addie/desktop")
 # Get the list of DE genes from both proteomics and single cell
-proteomics_ctrlvsstim <- rownames(res)
+proteomics_ctrlvsstim <- na.omit(data_results$name[data_results$Stim_vs_Ctrl_p.adj < 0.05])
 sc_ctrlvsstim <- rownames(ctrlvsstim)
 
 # Make the Venn Diagram
@@ -636,22 +655,22 @@ ggsave("Venn_diagram.pdf", p, device = "pdf")
 # Get the genes that are DE in both sc and proteomics for GSEA
 names2 <- Reduce(intersect, vennlist)
 
-# correlate the abundances/expression of the 443 genes DE in both modalities
-sc_462_ctrl <- subset(pseudobulk_ctrl, subset = rownames(pseudobulk_ctrl) %in% names2)
-prot_462_ctrl <- subset(abundance_ctrl, subset =rownames(abundance_ctrl) %in% names2)
-cor_df_ctrl_462 <- merge(sc_462_ctrl, prot_462_ctrl, by = "row.names")
-colnames(cor_df_ctrl_462) <- c('rownames', "sc", "prot")
+# correlate the abundances/expression of the genes DE in both modalities
+sc_151_ctrl <- subset(pseudobulk_ctrl, subset = rownames(pseudobulk_ctrl) %in% names2)
+prot_151_ctrl <- subset(abundance_ctrl, subset =rownames(abundance_ctrl) %in% names2)
+cor_df_ctrl_151 <- merge(sc_151_ctrl, prot_151_ctrl, by = "row.names")
+colnames(cor_df_ctrl_151) <- c('rownames', "sc", "prot")
 
-sc_462_stim <- subset(pseudobulk_stim, subset = rownames(pseudobulk_stim) %in% names2)
-prot_462_stim <- subset(abundance_stim, subset =rownames(abundance_stim) %in% names2)
-cor_df_stim_462 <- merge(sc_462_stim, prot_462_stim, by = "row.names")
-colnames(cor_df_stim_462) <- c('rownames', "sc", "prot")
+sc_151_stim <- subset(pseudobulk_stim, subset = rownames(pseudobulk_stim) %in% names2)
+prot_151_stim <- subset(abundance_stim, subset =rownames(abundance_stim) %in% names2)
+cor_df_stim_151 <- merge(sc_151_stim, prot_151_stim, by = "row.names")
+colnames(cor_df_stim_151) <- c('rownames', "sc", "prot")
 
-cor.test(cor_df_ctrl_462$sc, cor_df_ctrl_462$prot)
-cor.test(cor_df_stim_462$sc, cor_df_stim_462$prot)
+cor.test(cor_df_ctrl_151$sc, cor_df_ctrl_151$prot)
+cor.test(cor_df_stim_151$sc, cor_df_stim_151$prot)
 
-# Plot the genes expression and protein levels of those 462 genes
-ctrl_cor_462 <- ggplot(cor_df_ctrl_462[cor_df_ctrl_462$prot > 0,], aes(x =log1p(prot), y= log1p(sc)))+
+# Plot the genes expression and protein levels of those 151 genes
+ctrl_cor_151 <- ggplot(cor_df_ctrl_151[cor_df_ctrl_151$prot > 0,], aes(x =log1p(prot), y= log1p(sc)))+
   geom_point(size = 0.5)+
   stat_smooth(method = "lm",
               formula = y ~ x,
@@ -659,7 +678,7 @@ ctrl_cor_462 <- ggplot(cor_df_ctrl_462[cor_df_ctrl_462$prot > 0,], aes(x =log1p(
   theme(text = element_text(size = 10))+
   xlab("Log Relative Protein abundance")+ ylab("Log Pseudobulk gene expression")
 
-stim_cor_462 <- ggplot(cor_df_stim_462[cor_df_stim_462$prot > 0,], aes(x = log1p(prot), y = log1p(sc)))+
+stim_cor_151 <- ggplot(cor_df_stim_151[cor_df_stim_151$prot > 0,], aes(x = log1p(prot), y = log1p(sc)))+
   geom_point(size = 0.5)+
   stat_smooth(method = "lm",
               formula = y ~ x,
@@ -667,14 +686,12 @@ stim_cor_462 <- ggplot(cor_df_stim_462[cor_df_stim_462$prot > 0,], aes(x = log1p
   theme(text = element_text(size = 10))+
   xlab("Log Relative Protein abundance")+ ylab("Log Pseudobulk gene expression")
 
-ggsave("ctrl_pseudobulk_proteomics_cor_462.pdf", ctrl_cor_462, device = "pdf", height = 1.5, width = 2.25)
-ggsave("stim_pseudobulk_proteomics_cor_462.pdf", stim_cor_462, device = "pdf", height = 1.5, width = 2.25)
+ggsave("ctrl_pseudobulk_proteomics_cor_151.pdf", ctrl_cor_151, device = "pdf", height = 1.5, width = 2.25)
+ggsave("stim_pseudobulk_proteomics_cor_151.pdf", stim_cor_151, device = "pdf", height = 1.5, width = 2.25)
 
-cor.test(cor_df_ctrl_462$sc, cor_df_ctrl_462$prot)
-cor.test(cor_df_stim_462$sc, cor_df_stim_462$prot)
 
-cor.test(log1p(cor_df_ctrl_462$sc), log1p(cor_df_ctrl_462$prot))
-cor.test(log1p(cor_df_stim_462$sc), log1p(cor_df_stim_462$prot))
+cor.test(log1p(cor_df_ctrl_151$sc), log1p(cor_df_ctrl_151$prot))
+cor.test(log1p(cor_df_stim_151$sc), log1p(cor_df_stim_151$prot))
 
 
 # Prep for GSEA by making a ranked gene list
@@ -685,13 +702,23 @@ gsea_ranklist2 <- gsea_ranklist[order(gsea_ranklist$avg_log2FC, decreasing = T),
 gsea_list <- gsea_ranklist2$avg_log2FC
 names(gsea_list) <- rownames(gsea_ranklist2)
 
-# Run GSEA
+# Run GSEA on Hallmarks and GO terms
 h_gene_sets = msigdbr(species = "human", category = "H")
+
+C5_gene_sets = msigdbr(species = "human", category = "C5")
+
+
 h_gene_sets = h_gene_sets %>% split(x = .$gene_symbol, f = .$gs_name)
 
-gsea_out <- fgsea(h_gene_sets, stats = gsea_list)
+C5_gene_sets = C5_gene_sets %>% split(x = .$gene_symbol, f = .$gs_name)
 
-gsea_out <- subset(gsea_out, subset = gsea_out$padj < 0.05)
+set.seed(42)
+gsea_out_h <- fgsea(h_gene_sets, stats = gsea_list)
+
+set.seed(42)
+gsea_out_c5 <- fgsea(C5_gene_sets, stats = gsea_list)
+
+gsea_out <- rbind(gsea_out_h[gsea_out_h$padj < 0.05,], gsea_out_c5[gsea_out_c5$padj < 0.05,])
 
 df <- apply(gsea_out ,2,as.character)
 
@@ -699,11 +726,7 @@ write.table(df, file = "gsea_result.tsv", quote = F, sep = "\t")
 #################################################################################
 # GSEA plotting 
 # Load data and re-format
-GSEA <- read_excel("/Users/addie/gsea_result.xlsx")
-colnames <- colnames(GSEA)
-GSEA <- GSEA[,-1]
-colnames <- colnames[-9]
-colnames(GSEA) <- colnames
+GSEA <- gsea_out
 
 # Add some additional annotations for plotting
 GSEA$abs <- abs(as.numeric(GSEA$NES))
@@ -719,10 +742,9 @@ GSEA$ylabel <- "label"
 # Transparency of bubbles indicates significance levels
 GSEA$transparency <- NA
 GSEA$padj <- as.numeric(GSEA$padj)
-GSEA$transparency[GSEA$padj < 0.05] <- 0.2
-GSEA$transparency[GSEA$padj < 0.05 & GSEA$padj >= 0.01] <- 0.4
-GSEA$transparency[GSEA$padj < 0.01 & GSEA$padj >= 0.001] <- 0.6
-GSEA$transparency[GSEA$padj < 0.001 & GSEA$padj >= 0.0001] <- 0.8
+GSEA$transparency[GSEA$padj < 0.05 & GSEA$padj >= 0.01] <- 1
+GSEA$transparency[GSEA$padj < 0.01 & GSEA$padj >= 0.001] <- 0.5
+
 
 
 #Plot and save
@@ -744,7 +766,7 @@ p <- ggplot(GSEA, mapping = aes(x = pathway,
 
 
 ggsave(
-  "GSEA plot.pdf", p, device = "pdf", width = 10, height = 5
+  "GSEA plot.pdf", p, device = "pdf", width = 10, height =15
 )
 
 ####################################################################################
@@ -756,62 +778,70 @@ library(ggfortify)
 proteomics_data3 <- data.frame(t(prot_data_final2))
 proteomics_data3 <- proteomics_data3[-11,]
 proteomics_data3 <- data.frame(sapply(proteomics_data3, as.numeric))
-colnames(proteomics_data3) <- rownames(proteomics_data2)
+colnames(proteomics_data3) <- rownames(prot_data_final2)
 
 proteomics_data3$TREATMENT <- c(rep("Ctrl", 5), rep("Stim", 5))
 pca_res <- prcomp(proteomics_data3[1:3974], scale. = F)
 pca <- autoplot(pca_res, data = proteomics_data3, color = "TREATMENT",)+theme(text = element_text(size = 10))+
-  theme(aspect.ratio = 1)
+  theme_bw()+theme(aspect.ratio = 1)
 
-ggsave("proteomics_pca.pdf", pca, device = "pdf", height = 3, width = 3)
+ggsave("proteomics_pca.pdf", pca, device = "pdf", height = 4, width = 4)
 
-# Generate a Volcano plot based on the DESeq2 analysis differentially
+# Generate a Volcano plot based on the DEP analysis differentially
 # abundant proteins
-res2$minuslog10p <- -log10(res2$pval)
-res2[res2$logFC > 20 | res2$logFC < -20,] <- NA
+res2 <- data_results
 res2 <- na.omit(res2)
+
+res2$minuslog10p <- -log10(res2$Stim_vs_Ctrl_p.adj)
 
 res2$direction <- NA
 
-res2$direction[res2$logFC > 1.5] <- "UP"
-res2$direction[res2$logFC < -1.5] <- "DOWN"
-res2$direction[is.na(res2$direction)] <- "NS"
+res2$direction[res2$Stim_vs_Ctrl_ratio > 0] <- "UP"
+res2$direction[res2$Stim_vs_Ctrl_ratio < 0] <- "DOWN"
 
 # Only add gene names to the most differentially aabundant proteins
 res2$label <- NA
-res2$label[res2$minuslog10p > 100] <- res2$gene[res2$minuslog10p > 100]
-res2$label[res2$logFC < -10] <- res2$gene[res2$logFC < -10]
-res2$label[res2$logFC >10] <- res2$gene[res2$logFC >10]
+res2$label <- res2$name
+res2$abs <- abs(res2$Stim_vs_Ctrl_ratio)
 
 # Make the volcano plot and save
-volcano <- ggplot(data=res2, aes(x=logFC, y=minuslog10p, col=direction, label = label)) + 
-  geom_point(size = 5)+
-  geom_text(vjust = -0.5, hjust = 1, size = 16)+
-  xlim(c(-15, 15))
 
-ggsave("prot_volcano.pdf", volcano, device = "pdf", width = 15, height = 15)
+library(ggrepel)
+volcano <- ggplot(data=res2, aes(x=Stim_vs_Ctrl_ratio, y=minuslog10p, col=direction, label = label)) + 
+  geom_point(size = 1)+
+  xlim(c(-7.5, 7.5))+
+  theme_bw()+
+  theme(aspect.ratio = 1)+
+  geom_text_repel()
+  
+
+ggsave("prot_volcano.pdf", volcano, device = "pdf", width = 8, height = 4)
+
+library(xlsx)
+write.xlsx(volcano$data, "volcanocoords_ASC.xlsx")
 
 # Heatmap of all proteins control vs. stimulated
 library(pheatmap)
 
-proteomics <- log10(proteomics_data2+1)
+proteomics <- log1p(prot_data_final2[1:10])
 scaled_prot <- scale(proteomics)
-allprots <- pheatmap(scaled_prot)
+allprots <- pheatmap(scaled_prot,
+                     cluster_cols =F)
 
 # Heatmap of differentially abundant proteins control vs. stimulated
-de_heatmap <- proteomics[rownames(proteomics) %in% res2$gene[res2$logFC > 1] | 
-                           rownames(proteomics) %in% res2$gene[res2$logFC < -1],]
+res3 <- na.omit(res2[res2$Stim_vs_Ctrl_p.adj < 0.05,])
+res4 <- res3[order(res2$abs, decreasing = T),]
+de_heatmap <- proteomics[rownames(proteomics) %in% res3$name,]
 deprots <- pheatmap(de_heatmap)
 
 # Heatmap of genes/proteins involved in MSC immunomodulation
-immprots <- unlist(as.list(read_excel("/Users/addie/Desktop/DEgenes.xlsx")))
-
-imm_heatmap <- proteomics[rownames(proteomics) %in% immprots,]
+imm_heatmap <- proteomics[rownames(proteomics) %in% res4$name[1:50],]
 imm_map <- pheatmap(imm_heatmap)
 
 ggsave("allprots2.pdf", allprots, device = "pdf", width = 7, height = 15)
 ggsave("deprots3.pdf", deprots, device = "pdf", width = 7, height = 7)
 ggsave("immprots.pdf", imm_map, device = "pdf", width = 7, height = 7)
+
 
 #######################################################################################
 # Scissor integration of Cultured and P0 cells
@@ -829,7 +859,7 @@ prot_scissor <- as.matrix(prots_for_scissor)
 phenotype <- treatment
 tag <- c('Control', 'Stimulated')
 infos <- Scissor(prot_scissor, D25P0, phenotype, tag = tag, alpha = 0.5, 
-                  family = "binomial", Save_file = "Scissor_D25P0.RData")
+                 family = "binomial", Save_file = "Scissor_D25P0.RData")
 
 Scissor_select <- rep(0, ncol(D25P0))
 names(Scissor_select) <- colnames(D25P0)
@@ -837,7 +867,7 @@ Scissor_select[infos$Scissor_pos] <- 1
 Scissor_select[infos$Scissor_neg] <- 2
 D25P0 <- AddMetaData(D25P0, metadata = Scissor_select, col.name = "scissor")
 Scissor_D25P0 <- DimPlot(D25P0, reduction = 'umap', group.by = 'scissor', cols = 
-          c('grey','indianred1','royalblue'), pt.size = 1.2, order = c(2,1))+ theme(aspect.ratio = 1)
+                           c('grey','indianred1','royalblue'), pt.size = 1.2, order = c(2,1))+ theme(aspect.ratio = 1)
 
 # Save UMAP
 ggsave("D25P0 Scissor.pdf", Scissor_D25P0, device = "pdf")
@@ -846,7 +876,7 @@ ggsave("D25P0 Scissor.pdf", Scissor_D25P0, device = "pdf")
 Cultured <- NormalizeData(Cultured) %>% ScaleData(.)
 
 infos_cultured <- Scissor(prot_scissor, Cultured, phenotype, tag = tag, alpha = 0.5, 
-                 family = "binomial", Save_file = "Scissor_D25Cultured.RData")
+                          family = "binomial", Save_file = "Scissor_D25Cultured.RData")
 
 Scissor_select <- rep(0, ncol(Cultured))
 names(Scissor_select) <- colnames(Cultured)
@@ -854,7 +884,7 @@ Scissor_select[infos_cultured$Scissor_pos] <- 1
 Scissor_select[infos_cultured$Scissor_neg] <- 2
 Cultured <- AddMetaData(Cultured, metadata = Scissor_select, col.name = "scissor")
 Scissor_Cultured <- DimPlot(Cultured, reduction = 'umap', group.by = 'scissor', cols = 
-                           c('grey','indianred1','royalblue'), pt.size = 1.2, order = c(2,1))+ theme(aspect.ratio = 1)
+                              c('grey','indianred1','royalblue'), pt.size = 1.2, order = c(2,1))+ theme(aspect.ratio = 1)
 
 # Save UMAP
 ggsave("D25_Cultured Scissor.pdf", Scissor_Cultured, device = "pdf")
@@ -877,4 +907,3 @@ cell_surface_proteins <- c("CD248", "ICAM1", "EMP3", "THY1", "PMEPA1", "CD44")
 
 
 scissor_surface.markers <- scissor.markers[rownames(scissor.markers) %in% cell_surface_proteins,]
-
