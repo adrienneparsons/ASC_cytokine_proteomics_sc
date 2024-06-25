@@ -24,12 +24,12 @@ Monocle3 is used to identify a trajectory and pseudotime projection on the cultu
 ["ASC single cell analysis"](Figure2.pdf)
 
 ### Single cell RNA sequencing and bulk proteomic concurrence testing
-Following this single cell RNA sequencing pipeline, the proteomics data is read in and protein names are substituted for gene names. Following some formatting, the correlatiion between bulk proteomics data in control and cytokine-stimulated cultured samples and single-cell pseudobulk data in control and cytokine-stimulated cells is calculated. Differential gene expression analysis (control vs. stimulated) and differential protein abundance analysis (control vs. stimulated) are performed, and the relationship between differentially abundant genes/proteins is idenitfied, plotted, and functionally interrogated uusing GSEA. 
+Following this single cell RNA sequencing pipeline, the proteomics data is read in and protein names are substituted for gene names. Following some formatting, the correlation between bulk proteomics data in control and cytokine-stimulated cultured samples and single-cell pseudobulk data in control and cytokine-stimulated cells is calculated. Differential gene expression analysis (control vs. stimulated) and differential protein abundance analysis (control vs. stimulated) are performed, and the relationship between differentially abundant genes/proteins is idenitfied, plotted, and functionally interrogated uusing GSEA. 
 
 ["Concurrence testing"](Figure4.pdf)
 
 ### Protemic profiling
-Next, analysis using just the bulk proteomics of 10 human donor ASC samples (5 donors, control and cytokine-stimulated) is performed. PCA plotting shows separation based on presence or absence of cytokine treatment. Differential protein analysis is plotted as a volcano plot. The heatmaps showing all proteins, differentially abundant proteins, sand proteins encoded by DE genes following cytokine stimulation (Hu et al, Cell BioSci 2024) are made.
+Next, analysis using just the bulk proteomics of 10 human donor ASC samples (5 donors, control and cytokine-stimulated) is performed. PCA plotting shows separation based on presence or absence of cytokine treatment. Differential protein analysis is plotted as a volcano plot. The heatmaps showing all proteins, differentially abundant proteins, and proteins encoded by DE genes following cytokine stimulation (Hu et al, Cell BioSci 2024) are made.
 
 ["Proteomic profiling"](Figure3.pdf)
 
