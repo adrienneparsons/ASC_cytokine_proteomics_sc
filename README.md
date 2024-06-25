@@ -3,6 +3,9 @@ Single cell RNA sequencing and bulk proteomics analysis of ASCs in response to i
 
 This repository contains a script and files used to analyze single cell and bulk proteomics data of unmodified adipose stromal vascular fraction and cultured adipose-derived stem/stromal cells to better characterize in the ASC response to inflammatory stimuli in vitro. The integration of bulk proteomics and single cell RNA sequencing also allows us to gain novel insights in how in vitro treatments translate to in vivo biology.
 
+Proteomics data can be found on MassIVE (MSV000094493)
+single cell data can be found on GEO (GSE270461)
+
 ## Set up for script
 Human ASCs cultured with and without inflammatory cytokines and unmodified human SVF cells were assayed for single cell RNA sequencing using the 10x Genomics platform. The resulting sequencing data was aligned and pre-processed using CellRanger software, and the resulting barcode, matrix, and feature files were saved for reading in to the script. Concurrently, Human ASCs were cultured in the same inflammatory cytokines and then were assayed for proteomics in bulk using LC-MS/MS. Proteins and their relative abundances were identified and the data were exported into an excel spreadsheet.
 
