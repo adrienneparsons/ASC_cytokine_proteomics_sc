@@ -555,7 +555,7 @@ rownames(proteomics_data) <- proteomics$Accession
 proteomics_data[is.na(proteomics_data)] <- 0
 
 # Change the protein Accession numbers to gene names
-names <- read_table("./uniprot-download_true_format_tsv-2023.05.22-16.32.18.17.tsv")
+names <- read_table("../uniprot-download_true_format_tsv-2023.05.22-16.32.18.17.tsv")
 proteomics_data2 <- proteomics_data[rownames(proteomics_data) %in% names$From,]
 proteomics_data2$gene <- NA
 for(prot_name in unique(names$From)){
@@ -1080,11 +1080,55 @@ rownames(prot_scissor) <- rownames(prots_for_scissor)
 phenotype <- treatment
 tag <- c('Control', 'Stimulated')
 
+# Add in validation data
+# Create Seurat Object
+atlas1 <- Read10X("/Users/addie/Partners HealthCare Dropbox/Adrienne Parsons/ASC scRNAseq Proteomics/Additional data/Atlas1", gene.column = 2, cell.column = 1)
+atlas1 <- CreateSeuratObject(atlas1)
+
+# Meetadata
+mda1 <- read_table("/Users/addie/Partners HealthCare Dropbox/Adrienne Parsons/ASC scRNAseq Proteomics/Additional data/Atlas1/metadata.tsv")
+rownames(mda1) <- mda1$cell_id
+atlas1a <- atlas1[which(colnames(atlas1) %in% rownames(mda1))]
+mda1 <- mda1[which(mda1$cell_id %in% colnames(atlas1a)),]
+atlas1 <- AddMetaData(atlas1a, mda1)
+
+# Pre-processing for sc data
+atlas1 <- NormalizeData(atlas1)
+atlas1 <- FindVariableFeatures(atlas1)
+atlas1 <- ScaleData(atlas1)
+atlas1 <- RunPCA(atlas1)
+atlas1 <- FindNeighbors(atlas1) 
+atlas1 <- FindClusters(atlas1, resolution = 0.6)
+atlas1 <- RunUMAP(atlas1, dims = 1:15)
+atlas1 <- RunAzimuth(atlas1, reference = "adiposeref")
+
+# Get the unique cell types identified for each cluster
+for(cluster in unique(atlas1@meta.data$RNA_snn_res.0.6)){ 
+  print(cluster)
+  print(atlas1@meta.data$predicted.celltype.l1[atlas1@meta.data$RNA_snn_res.0.6 == cluster] %>% table())
+}
+
+# Assign a cell type to each cluster (resolution 0.6) based on consensus 
+atlas1@meta.data$celltype_major <- NA
+for(cluster in unique(atlas1$RNA_snn_res.0.6)){
+  print(cluster)
+  tbl <- as.data.frame(atlas1@meta.data$predicted.celltype.l1[atlas1@meta.data$RNA_snn_res.0.6 == cluster] %>% table())
+  atlas1@meta.data$celltype_major[atlas1@meta.data$RNA_snn_res.0.6 == cluster] <- as.character(tbl[which(tbl$Freq == max(tbl$Freq)), 1])
+}
+
+
 # Scissor is only compatible with v4 assays
 D25P02 <- D25P0
+atlas2 <- subset(atlas1, subset = celltype_major == "ASPC")
 D25P02[["RNA"]] <- as(object = D25P02[["RNA"]], Class = "Assay")
+atlas2[["RNA"]] <- as(object = atlas2[["RNA"]], Class = "Assay")
 
-# Run Scissor
+# Save data
+setwd("/Users/addie/desktop")
+saveRDS(atlas2, "Atlas1ASCs.rds")
+saveRDS(prot_scissor, "Protscissor.rds")
+
+# Run for original data
 infos <- Scissor(prot_scissor, D25P02, phenotype, tag = tag, alpha = 0.5, 
                  family = "binomial", Save_file = "Scissor_D25P0.RData")
 
@@ -1098,6 +1142,21 @@ Scissor_D25P02 <- DimPlot(D25P02, reduction = 'umap', group.by = 'scissor', cols
 
 # Save UMAP
 ggsave("D25P0 Scissor.pdf", Scissor_D25P02, device = "pdf")
+
+# Repeat for validation datta
+infos <- Scissor(prot_scissor, atlas2, phenotype, tag = tag, alpha = 0.5, 
+                 family = "binomial", Save_file = "Scissor_D25P0.RData")
+
+Scissor_select <- rep(0, ncol(atlas2))
+names(Scissor_select) <- colnames(atlas2)
+Scissor_select[infos$Scissor_pos] <- 1
+Scissor_select[infos$Scissor_neg] <- 2
+atlas2 <- AddMetaData(atlas2, metadata = Scissor_select, col.name = "scissor")
+Scissor_atlas2 <- DimPlot(atlas2, reduction = 'umap', group.by = 'scissor', cols = 
+                            c('grey','indianred1','royalblue'), pt.size = 1.2, order = c(2,1))+ theme(aspect.ratio = 1)
+
+# Save UMAP
+ggsave("Atlas1 Scissor.pdf", Scissor_atlas2, device = "pdf")
 
 # Repeat for cultured cells
 Cultured <- NormalizeData(Cultured) %>% ScaleData(.)
@@ -1117,13 +1176,14 @@ Scissor_Cultured <- DimPlot(Cultured, reduction = 'umap', group.by = 'scissor', 
 ggsave("D25_Cultured Scissor.pdf", Scissor_Cultured, device = "pdf")
 
 # Identify the DE genes between ASCs determined to be Scissor Positive and
-# Scissor Negatve
+# Scissor Negative in both originaal and validation data
 D25P0$scissor <- D25P02@meta.data$scissor
 
 ASC_only <- subset(D25P0, subset = celltype_final == "ASC Pre-adipocyte" |
                      celltype_final == "Fibro-ASC" | celltype_final == "ASC Other")
 
 Idents(ASC_only) <- "scissor"
+Idents(atlas2) <- "scissor"
 scissor.markers <- FindMarkers(ASC_only, ident.1 = 1, ident.2 = c(2))
 scissor.markers <- scissor.markers[scissor.markers$p_val_adj < 0.05,]
 scissor.markers$gene <- rownames(scissor.markers)
@@ -1131,7 +1191,7 @@ scissor.markers$gene <- rownames(scissor.markers)
 # Cross-reference the statistically significant genes to the cell surface
 # protein atlas
 setwd("<YOUR DATA PATH>")
-atlas <- read_excel("./Users/addie/Downloads/table_S3_surfaceome.xlsx", skip = 1)
+atlas <- read_excel("./table_S3_surfaceome.xlsx", skip = 1)
 atlas <- atlas$`UniProt gene`[atlas$`Surfaceome Label` == "surface"]
 
 # Get the cell surface proteins
@@ -1139,7 +1199,12 @@ cell_surface_proteins <- scissor.markers$gene[scissor.markers$gene %in% atlas]
 
 # Identify the scissor genes that arre cell surface genes and save
 scissor_surface.markers <- scissor.markers[rownames(scissor.markers) %in% cell_surface_proteins,]
-write.csv(scissor_surface.markers, file = "scissor_surface.markers.csv")
+write.csv(scissor_surface.markers, file = "D25P0scissor_surface.markers.csv")
+
+genes <- atlas[atlas %in% rownames(atlas2)]
+
+atlas.scissor.markers <- FindMarkers(atlas2, ident.1 = 1, ident.2 = c(2), features=intersect(rownames(atlas2), genes))
+write.csv(atlas.scissor.markers, "Validation DE genes.csv")
 
 ######################################################################################
 # CellChat analysis of scissor-positive cells
